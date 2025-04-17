@@ -95,7 +95,9 @@ async def Q1(ctx, date):
     
     if age < 18:
         try:
-            await ctx.guild.ban(ctx.author, reason="18歳未満のためbanされました。")
+            channel = bot.get_channel(1362298047949832317)
+            await check(ctx, ctx.author, channel)
+            await ctx.guild.ban(ctx.author, reason="BANされました。")
         except discord.Forbidden:
             await ctx.send(f"{ctx.author.mention} をbanできませんでした。権限が不足している可能性があります。")
         except discord.HTTPException as e:
@@ -135,6 +137,8 @@ async def Q2(ctx, answer: str):
     # 回答が正しいかチェック
     if answer != correct_answer:
         try:
+            channel = bot.get_channel(1362298047949832317)
+            await check(ctx, ctx.author, channel)
             await ctx.guild.ban(ctx.author, reason="BANされました。")
         except discord.Forbidden:
             await ctx.send(f"{ctx.author.mention} をキックできませんでした。権限が不足している可能性があります。")
@@ -173,6 +177,8 @@ async def Q3(ctx, answer: str):
 
     if answer != correct_answer:
         try:
+            channel = bot.get_channel(1362298047949832317)
+            await check(ctx, ctx.author, channel)
             await ctx.guild.ban(ctx.author, reason="BANされました。")
         except discord.Forbidden:
             await ctx.send(f"{ctx.author.mention} をキックできませんでした。権限が不足している可能性があります。")
@@ -280,7 +286,7 @@ async def request(ctx):
     await msg.delete()
 
 @bot.command()
-async def check(ctx, user: discord.Member = None, channel = None):
+async def check(ctx, user: discord.Member = None, channel: discord.TextChannel = None):
 
     target = user or ctx.author
     uid = str(target.id)
@@ -297,5 +303,27 @@ async def check(ctx, user: discord.Member = None, channel = None):
     else:
         await ctx.send(msg)
 
+@bot.command()
+async def check_id(ctx, id=None, channel: discord.TextChannel = None):
+    if id is None:
+        await ctx.send("ユーザーIDを指定してください。")
+        return
+
+    uid = str(id)
+
+    if uid not in user_data:
+        await ctx.send("指定されたIDのデータが見つかりません。")
+        return
+
+    answers = user_data[uid].get("answers", {})
+
+    msg = f"【({uid}) の情報】\n回答\n"
+    for q, a in answers.items():
+        msg += f" - {q}: {a}\n"
+
+    if channel is not None:
+        await channel.send(msg)
+    else:
+        await ctx.send(msg)
 
 bot.run("MTM2MTc2OTY0OTQ4NTkwNjIwMA.GE786O.DMzOZantaOG-hKBmBuqIp5Y60PFoaOLzNnLQTM")  # ← ここに実際のトークンを入れてください
