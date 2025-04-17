@@ -53,14 +53,14 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    if message.content() == "サポートサーバー(https://discord.gg/7Td6kK9hF8)":
+    if message.content == "サポートサーバー(https://discord.gg/7Td6kK9hF8)":
         await message.channel.send("リマインド送るね。")
         await asyncio.sleep(3600)  # 600秒 = 10分
         channel = bot.get_channel(REMIND_CHANNEL_ID)
         if channel:
             await channel.send("<@1353745472153583616> dissoku")
 
-    elif message.content() == "https://www.paypal.com/ncp/payment/V2257AKBQS2S6":
+    elif message.content == "https://www.paypal.com/ncp/payment/V2257AKBQS2S6":
         await message.channel.send("リマインド送るね。")
         await asyncio.sleep(7200)  # 600秒 = 10分
         channel = bot.get_channel(REMIND_CHANNEL_ID)
