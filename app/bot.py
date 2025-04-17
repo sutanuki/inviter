@@ -242,7 +242,7 @@ async def request(ctx):
     msg = await ctx.send(f"{ctx.author.mention} の回答を記録しました。\n<#1361776932684824708>に進んでください。")
 
     channel = bot.get_channel(1362298047949832317)
-    await check(ctx.author.id,channel)
+    await check(ctx, ctx.author, channel)
 
     await asyncio.sleep(5)
     await ctx.message.delete()
