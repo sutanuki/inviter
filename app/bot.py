@@ -11,6 +11,8 @@ intents.message_content = True  # メッセージの内容を取得するため
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+REMIND_CHANNEL_ID = 1362318510251970560
+
 DATA_FILE = "data.json"
 ADMIN_USER_IDS = [1353745472153583616,1361769649485906200]
 
@@ -37,6 +39,35 @@ def calculate_age(birthday_str):
     today = datetime.today()
     age = today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day))
     return age
+
+@bot.event
+async def on_member_join(member):
+    role_name = "付与待ち"  # 付与するロール名（適切に変更してください）
+    
+    # サーバー内のロールを取得
+    role = discord.utils.get(member.guild.roles, name=role_name)
+    await member.add_roles(role)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if message.content() == "サポートサーバー(https://discord.gg/7Td6kK9hF8)":
+        await message.channel.send("リマインド送るね。")
+        await asyncio.sleep(3600)  # 600秒 = 10分
+        channel = bot.get_channel(REMIND_CHANNEL_ID)
+        if channel:
+            await channel.send("<@1353745472153583616> dissoku")
+
+    elif message.content() == "https://www.paypal.com/ncp/payment/V2257AKBQS2S6":
+        await message.channel.send("リマインド送るね。")
+        await asyncio.sleep(7200)  # 600秒 = 10分
+        channel = bot.get_channel(REMIND_CHANNEL_ID)
+        if channel:
+            await channel.send("<@1353745472153583616> bump")
+
+    await bot.process_commands(message)
 
 @bot.event
 async def on_ready():
