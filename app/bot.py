@@ -12,7 +12,7 @@ intents.message_content = True  # メッセージの内容を取得するため
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 DATA_FILE = "data.json"
-ADMIN_USER_IDS = [1353745472153583616]
+ADMIN_USER_IDS = [1353745472153583616,1361769649485906200]
 
 # データをロードまたは初期化
 if os.path.exists(DATA_FILE):
@@ -241,12 +241,15 @@ async def request(ctx):
 
     msg = await ctx.send(f"{ctx.author.mention} の回答を記録しました。\n<#1361776932684824708>に進んでください。")
 
+    channel = bot.get_channel(1362298047949832317)
+    check(ctx.author.id,channel)
+    
     await asyncio.sleep(5)
     await ctx.message.delete()
     await msg.delete()
 
 @bot.command()
-async def check(ctx, user: discord.Member = None):
+async def check(ctx, user: discord.Member = None, channel = None):
     """ユーザーの回答を確認（管理者のみ）"""
     if ctx.author.id not in ADMIN_USER_IDS:
         await ctx.send("このコマンドを使用する権限がありません。")
@@ -262,7 +265,10 @@ async def check(ctx, user: discord.Member = None):
     msg = f"【{target.display_name} の情報】\n回答\n"
     for q, a in answers.items():
         msg += f" - {q}: {a}\n"
-    await ctx.send(msg)
+    if channel != None:
+        await channel.send(msg)
+    else:
+        await ctx.send(msg)
 
 
 bot.run("MTM2MTc2OTY0OTQ4NTkwNjIwMA.GE786O.DMzOZantaOG-hKBmBuqIp5Y60PFoaOLzNnLQTM")  # ← ここに実際のトークンを入れてください
