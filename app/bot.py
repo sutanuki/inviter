@@ -281,10 +281,6 @@ async def request(ctx):
 
 @bot.command()
 async def check(ctx, user: discord.Member = None, channel = None):
-    """ユーザーの回答を確認（管理者のみ）"""
-    if ctx.author.id not in ADMIN_USER_IDS:
-        await ctx.send("このコマンドを使用する権限がありません。")
-        return
 
     target = user or ctx.author
     uid = str(target.id)
