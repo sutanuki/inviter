@@ -130,7 +130,7 @@ async def Q2(ctx, answer: str):
     user_data.setdefault(uid, {})
     user_data[uid]["answers"]['Q2'] = answer
     
-    correct_answer = 'Yes'
+    correct_answer = 'No'
 
     # 回答が正しいかチェック
     if answer != correct_answer:
