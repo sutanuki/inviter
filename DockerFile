@@ -19,4 +19,4 @@ COPY . /bot
 EXPOSE 8080
 
 # 実行
-CMD python app/main.p
+CMD python app/bot.py
