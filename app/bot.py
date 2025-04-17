@@ -262,7 +262,7 @@ async def check(ctx, user: discord.Member = None, channel = None):
         return
 
     answers = user_data[uid].get("answers", {})
-    msg = f"【{target.display_name} の情報】\n回答\n"
+    msg = f"【{target.display_name}({uid}) の情報】\n回答\n"
     for q, a in answers.items():
         msg += f" - {q}: {a}\n"
     if channel != None:
