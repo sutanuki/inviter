@@ -19,4 +19,4 @@ COPY . /bot
 EXPOSE 8080
 
 # 実行
-CMD python app/bot.py
+CMD ["uvicorn", "app.bot:app", "--host", "0.0.0.0", "--port", "8080"]
