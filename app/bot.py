@@ -334,8 +334,6 @@ async def send_flexible_embed(
     fields: list = None,  # [{name, value, inline}]
     color: discord.Color = discord.Color.blue(),
     footer: str = None,
-    thumbnail_url: str = None,
-    image_url: str = None,
     timestamp: bool = False,
     use_fetch: bool = False  # Trueならfetch_channelを使う
 ):
@@ -362,10 +360,6 @@ async def send_flexible_embed(
 
     if footer:
         embed.set_footer(text=footer)
-    if thumbnail_url:
-        embed.set_thumbnail(url=thumbnail_url)
-    if image_url:
-        embed.set_image(url=image_url)
 
     await channel.send(embed=embed)
 
@@ -397,8 +391,7 @@ async def embed(ctx, channel_id: int, title: str, description: str, *fields: str
         description=description,
         fields=field_list,
         color=discord.Color.green(),
-        footer="提供元：ChatGPT",
-        thumbnail_url="https://i.imgur.com/4M34hi2.png",
+        footer="認証",
         timestamp=True
     )
 
