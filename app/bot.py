@@ -326,4 +326,48 @@ async def check_id(ctx, id=None, channel: discord.TextChannel = None):
     else:
         await ctx.send(msg)
 
+async def send_flexible_embed(
+    bot: commands.Bot,
+    channel_id: int,
+    title: str = None,
+    description: str = None,
+    fields: list = None,  # [{name, value, inline}]
+    color: discord.Color = discord.Color.blue(),
+    footer: str = None,
+    thumbnail_url: str = None,
+    image_url: str = None,
+    timestamp: bool = False,
+    use_fetch: bool = False  # Trueならfetch_channelを使う
+):
+    # チャンネル取得
+    channel = await bot.fetch_channel(channel_id) if use_fetch else bot.get_channel(channel_id)
+    if channel is None:
+        print(f"チャンネル（ID: {channel_id}）が見つかりませんでした。")
+        return
+
+    # Embed生成
+    embed = discord.Embed(title=title, description=description, color=color)
+    
+    if timestamp:
+        embed.timestamp = discord.utils.utcnow()
+
+    # フィールド追加
+    if fields:
+        for field in fields[:25]:  # 最大25件まで
+            embed.add_field(
+                name=field.get("name", "No Name"),
+                value=field.get("value", "No Value"),
+                inline=field.get("inline", False)
+            )
+
+    if footer:
+        embed.set_footer(text=footer)
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    if image_url:
+        embed.set_image(url=image_url)
+
+    await channel.send(embed=embed)
+
+
 bot.run("MTM2MTc2OTY0OTQ4NTkwNjIwMA.GE786O.DMzOZantaOG-hKBmBuqIp5Y60PFoaOLzNnLQTM")  # ← ここに実際のトークンを入れてください
