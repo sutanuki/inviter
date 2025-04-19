@@ -369,5 +369,39 @@ async def send_flexible_embed(
 
     await channel.send(embed=embed)
 
+@bot.command()
+async def embed(ctx, channel_id: int, title: str, description: str, *fields: str):
+    """
+    チャンネルに埋め込みメッセージを送信するコマンド
+    フィールド名と内容をユーザーが指定
+    例: !embed <channel_id> <title> <description> フィールド数 <フィールド名1> <フィールド内容1> <フィールド名2> <フィールド内容2> ...
+    """
+
+    # 入力が奇数個の場合、フィールド名と内容が対応しないのでエラーメッセージ
+    if len(fields) % 2 != 0:
+        await ctx.send("フィールドのペア数が合っていません。フィールド名と内容をペアで入力してください。")
+        return
+
+    # フィールドのリストを作成
+    field_list = []
+    for i in range(0, len(fields), 2):
+        field_name = fields[i]
+        field_value = fields[i+1]
+        field_list.append({"name": field_name, "value": field_value, "inline": False})
+
+    # send_flexible_embed関数を呼び出し
+    await send_flexible_embed(
+        bot=bot,
+        channel_id=channel_id,
+        title=title,
+        description=description,
+        fields=field_list,
+        color=discord.Color.green(),
+        footer="提供元：ChatGPT",
+        thumbnail_url="https://i.imgur.com/4M34hi2.png",
+        timestamp=True
+    )
+
+
 
 bot.run("MTM2MTc2OTY0OTQ4NTkwNjIwMA.GE786O.DMzOZantaOG-hKBmBuqIp5Y60PFoaOLzNnLQTM")  # ← ここに実際のトークンを入れてください
