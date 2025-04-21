@@ -198,9 +198,24 @@ async def Q2(ctx, answer: str):
 
     msg = await ctx.send(f"{ctx.author.mention} の回答を記録しました。\n<#1361777019632746656>に進んでください。")
 
-    await asyncio.sleep(5)
-    await ctx.message.delete()
-    await msg.delete()
+
+# 元のメッセージを安全に削除
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass  # メッセージがもう無ければ無視
+    except discord.Forbidden:
+        await ctx.send("メッセージを削除する権限がありません。")
+    except Exception as e:
+        await ctx.send(f"メッセージ削除中にエラーが発生しました: {e}")
+
+    # botのメッセージも安全に削除
+    try:
+        await msg.delete()
+    except discord.NotFound:
+        pass
+    except Exception as e:
+        print(f"msg削除エラー: {e}")
 
 @bot.command()
 async def Q3(ctx, answer: str):
