@@ -4,6 +4,51 @@ from datetime import datetime
 import asyncio
 import json
 import os
+import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
+
+HEADERS = {
+    "apikey": SUPABASE_API_KEY,
+    "Authorization": f"Bearer {SUPABASE_API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# データをSupabaseから取得
+def load_data():
+    global user_data
+    response = requests.get(f"{SUPABASE_URL}/rest/v1/user_data?select=*", headers=HEADERS)
+    if response.status_code == 200:
+        data = response.json()
+        user_data = {item["id"]: {"answers": item["answers"]} for item in data}
+    else:
+        print("Supabaseからのデータ取得に失敗しました:", response.text)
+        user_data = {}
+
+# データをSupabaseに保存
+def save_data():
+    data_list = []
+    for uid, entry in user_data.items():
+        data_list.append({
+            "id": uid,
+            "answers": entry.get("answers", {})
+        })
+    for data in data_list:
+        response = requests.post(
+            f"{SUPABASE_URL}/rest/v1/user_data",
+            headers={**HEADERS, "Prefer": "resolution=merge-duplicates"},
+            json=[data]
+        )
+        if response.status_code not in [200, 201]:
+            print("保存失敗:", response.text)
+
+# 起動時にSupabaseからデータ取得
+load_data()
 
 intents = discord.Intents.default()
 intents.members = True
