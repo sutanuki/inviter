@@ -68,10 +68,6 @@ if os.path.exists(DATA_FILE):
 else:
     user_data = {}
 
-# データ保存関数
-def save_data():
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(user_data, f, ensure_ascii=False, indent=2)
 
 def check_channel(ctx, allowed_channel_id):
     """指定したチャンネルでのみコマンドを実行させる"""
