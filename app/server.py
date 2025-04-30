@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 import uvicorn
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 app = FastAPI()
 
 @app.head("/")
 async def root_head():
-    return JSONResponse(status_code=200)
+    return Response(status_code=200)
 @app.get("/")
 def read_root():
     return {"message": "Server is Online."}
