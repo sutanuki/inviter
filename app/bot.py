@@ -452,5 +452,5 @@ async def embed(ctx, channel_id: int, title: str, description: str, *fields: str
     )
 
 
-
-bot.run("MTM2MTc2OTY0OTQ4NTkwNjIwMA.GE786O.DMzOZantaOG-hKBmBuqIp5Y60PFoaOLzNnLQTM")  # ← ここに実際のトークンを入れてください
+TOKEN = os.getenv("DISCORD_TOKEN")
+bot.run(TOKEN)
