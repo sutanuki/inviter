@@ -162,18 +162,19 @@ async def send_flexible_embed(
     await channel.send(embed=embed, view=view)
 
 class YesNoView(View):
-    def __init__(self, question_name: str, next_channel: str, remove_role: str = None, add_role: str = None):
+    def __init__(self, question_name: str, next_channel: str, correct_answer: str, remove_role: str = None, add_role: str = None):
         super().__init__(timeout=None)
         self.question_name = question_name
         self.next_channel = next_channel
+        self.correct_answer = correct_answer.lower()
         self.remove_role = remove_role
         self.add_role = add_role
 
         yes_button = Button(label="Yes", style=discord.ButtonStyle.success)
         no_button = Button(label="No", style=discord.ButtonStyle.danger)
 
-        yes_button.callback = self.make_callback("Yes")
-        no_button.callback = self.make_callback("No")
+        yes_button.callback = self.make_callback("yes")
+        no_button.callback = self.make_callback("no")
 
         self.add_item(yes_button)
         self.add_item(no_button)
@@ -186,9 +187,14 @@ class YesNoView(View):
             user_data[uid]["answers"][self.question_name] = answer
             save_data()
 
-            # ロールの付け替え
-            await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
+            if answer != self.correct_answer:
+                # 間違えた場合 → BAN & 通知
+                await interaction.guild.ban(interaction.user, reason="不正解によるBAN")
+                await interaction.response.send_message("あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。", ephemeral=True)
+                return
 
+            # 正解の場合は従来処理
+            await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
             await interaction.response.send_message(
                 f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
                 f"<#{self.next_channel}>へ進んでください。",
@@ -258,7 +264,7 @@ class FormView(discord.ui.View):
 
 
 @bot.command()
-async def ask_YesNo(ctx, question: str, channel_id: int, next_channel: int, remove_role: str, add_role: str, title: str, description: str, *fields: str):
+async def ask_YesNo(ctx, question: str, correct_answer: str, channel_id: int, next_channel: int, remove_role: str, add_role: str, title: str, description: str, *fields: str):
     if len(fields) % 2 != 0:
         await ctx.send("フィールド名と内容はペアで指定してください。")
         return
@@ -276,8 +282,15 @@ async def ask_YesNo(ctx, question: str, channel_id: int, next_channel: int, remo
         color=discord.Color.green(),
         footer="認証",
         timestamp=True,
-        view=YesNoView(question_name=question, next_channel=next_channel, remove_role=remove_role, add_role=add_role)
+        view=YesNoView(
+            question_name=question,
+            next_channel=next_channel,
+            correct_answer=correct_answer,
+            remove_role=remove_role,
+            add_role=add_role
+        )
     )
+
 @bot.command()
 async def ask_Modal(ctx, question: str, check_type: str, example: str, channel_id: int, next_channel: int, remove_role: str, add_role: str, title: str, description: str, *fields: str):
     if check_type == "inviters":
