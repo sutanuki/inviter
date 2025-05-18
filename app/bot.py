@@ -182,6 +182,8 @@ class YesNoView(View):
 
     def make_callback(self, answer: str):
         async def callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral=True)  # 3秒以内に応答（仮）
+
             uid = str(interaction.user.id)
             user_data.setdefault(uid, {})
             user_data[uid]["answers"] = user_data[uid].get("answers", {})
@@ -189,19 +191,21 @@ class YesNoView(View):
             save_data()
 
             if answer != self.correct_answer:
-                # 間違えた場合 → BAN & 通知
                 await interaction.guild.ban(interaction.user, reason="不正解によるBAN")
-                await interaction.response.send_message("あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。", ephemeral=True)
+                await interaction.followup.send(
+                    "あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。",
+                    ephemeral=True
+                )
                 return
 
-            # 正解の場合は従来処理
             await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
                 f"<#{self.next_channel}>へ進んでください。",
                 ephemeral=True
             )
         return callback
+
 
     
 class FormModal(discord.ui.Modal):
@@ -220,12 +224,14 @@ class FormModal(discord.ui.Modal):
         self.add_item(self.answer)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)  # 応答猶予を確保
         user_answer = self.answer.value
         valid = await self.check_func(interaction, user_answer)
         if valid:
             await self.save_answer(interaction, user_answer)
         else:
-            await interaction.response.send_message("❌ 回答の形式が正しくありません。", ephemeral=True)
+            await interaction.followup.send("❌ 回答の形式が正しくありません。", ephemeral=True)
+
 
     async def save_answer(self, interaction: discord.Interaction, answer: str):
         uid = str(interaction.user.id)
