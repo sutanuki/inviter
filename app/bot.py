@@ -61,6 +61,7 @@ DATA_FILE = "data.json"
 ADMIN_USER_IDS = [1353745472153583616,1361769649485906200]
 
 inviters = os.getenv("INVITERS")
+inviters = [inv.strip().lower() for inv in inviters.split(",") if inv.strip()]
 
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, "r", encoding="utf-8") as f:
