@@ -60,7 +60,7 @@ REMIND_CHANNEL_ID = 1358914591870156872
 DATA_FILE = "data.json"
 ADMIN_USER_IDS = [1353745472153583616,1361769649485906200]
 
-inviters = ["1353745472153583616"]
+inviters = os.getenv("INVITERS")
 
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, "r", encoding="utf-8") as f:
