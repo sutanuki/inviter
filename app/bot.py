@@ -357,5 +357,26 @@ async def check_id(ctx, id=None, channel: discord.TextChannel = None):
     else:
         await ctx.send(msg)
 
+@bot.command()
+@commands.has_role("招待者")
+async def threw(ctx, member: discord.Member):
+    guild = ctx.guild
+    inviter_role = discord.utils.get(guild.roles, name="招待者")
+    pending_role = discord.utils.get(guild.roles, name="付与待ち")
+    confirmed_role = discord.utils.get(guild.roles, name="招待者確認")
+
+    # 対象ユーザーから付与待ちロールを外す
+    if pending_role in member.roles:
+        await member.remove_roles(pending_role)
+    else:
+        await ctx.send(f"{member.display_name} さんは既に付与待ちロールを持っていません。")
+
+    # 対象ユーザーに招待者確認ロールを付与
+    if confirmed_role not in member.roles:
+        await member.add_roles(confirmed_role)
+        await ctx.send(f"{member.mention} に招待者確認ロールを付与しました。")
+    else:
+        await ctx.send(f"{member.mention} は既に招待者確認ロールを持っています。")
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
