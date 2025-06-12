@@ -83,7 +83,6 @@ class MyBot(commands.Bot):
         await self.tree.sync(guild=guild_id)
         print("Commands synced.")
 
-
 bot = MyBot(command_prefix="!", intents=intents)
 
 @bot.event
@@ -92,6 +91,7 @@ async def on_ready():
     print("Commands:")
     for cmd in bot.tree.get_commands():
         print(f"- {cmd.name}")
+
 REMIND_CHANNEL_ID = 1358914591870156872
 
 DATA_FILE = "data.json"
