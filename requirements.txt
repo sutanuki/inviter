@@ -24,3 +24,4 @@ requests
 python-dotenv
 gspread
 supabase
+oauth2client
