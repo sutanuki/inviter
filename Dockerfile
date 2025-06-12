@@ -2,7 +2,7 @@ FROM python:3.13
 WORKDIR /bot
 
 COPY requirements.txt /bot/
-RUN pip install -r requirements.txt
+RUN pip install --root-user-action=ignore -r requirements.txt
 COPY . /bot
 
 EXPOSE 8080
