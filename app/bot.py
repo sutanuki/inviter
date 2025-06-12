@@ -83,6 +83,7 @@ class MyBot(commands.Bot):
         await self.tree.sync(guild=guild_id)
         print("Commands synced.")
 
+
 bot = MyBot(command_prefix="!", intents=intents)
 
 @bot.event
@@ -91,7 +92,6 @@ async def on_ready():
     print("Commands:")
     for cmd in bot.tree.get_commands():
         print(f"- {cmd.name}")
-
 REMIND_CHANNEL_ID = 1358914591870156872
 
 DATA_FILE = "data.json"
@@ -415,7 +415,6 @@ async def threw(ctx, member: discord.Member):
     else:
         await ctx.send(f"{member.mention} は既に招待者確認ロールを持っています。")
 
-<<<<<<< HEAD
 
 
 
@@ -504,7 +503,5 @@ class ExportCog(commands.Cog):
         except Exception as e:
             await interaction.followup.send(f"❌ 出力に失敗しました: {e}", ephemeral=True)
 
-=======
->>>>>>> d4b03d74f881ba20ee32863f9ca69732ef5d8ca2
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
