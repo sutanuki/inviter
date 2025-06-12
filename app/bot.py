@@ -48,13 +48,8 @@ intents.message_content = True
 
 def load_data():
     global user_data
-    response = requests.get(f"{SUPABASE_URL}/rest/v1/user_data_copy?select=*", headers=HEADERS)
-    if response.status_code == 200:
-        data = response.json()
-        user_data = {item["id"]: {"answers": item["answers"]} for item in data}
-    else:
-        print("Supabaseからのデータ取得に失敗しました:", response.text)
-        user_data = {}
+    data = supabase.table("user_data_copy").select("*").execute().data
+    user_data = {item["id"]: {"answers": item["answers"]} for item in data}
 
 def save_data():
     data_list = []
@@ -94,17 +89,10 @@ async def on_ready():
 
 REMIND_CHANNEL_ID = 1358914591870156872
 
-DATA_FILE = "data.json"
 ADMIN_USER_IDS = [1353745472153583616,1361769649485906200]
 
 inviters = os.getenv("INVITERS")
 inviters = [inv.strip().lower() for inv in inviters.split(",") if inv.strip()]
-
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        user_data = json.load(f)
-else:
-    user_data = {}
 
 def calculate_age(birthday_str):
     """生年月日（YYYY-MM-DD形式）から年齢を計算する"""
