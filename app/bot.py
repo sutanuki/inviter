@@ -406,90 +406,64 @@ async def threw(ctx, member: discord.Member):
 
 
 
-class InviteCommands(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+# ✅ 通常コマンド：招待情報を手動で登録
+@bot.command(name="add_invite")
+@commands.has_permissions(manage_guild=True)
+async def add_invite(ctx, inviter_id: str, invited_id: str, method: str, gender: str = "未入力"):
+    try:
+        data = {
+            "inviter_id": inviter_id,
+            "invited_id": invited_id,
+            "invite_method": method,
+            "gender": gender
+        }
+        supabase.table("invites").insert(data).execute()
 
-    @app_commands.command(name="add_invite", description="招待情報を手動で登録します")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.describe(
-        inviter_id="招待者のユーザーID",
-        invited_id="招待されたユーザーのID",
-        method="招待方法（例：リンク, QRコード, 口頭）",
-        gender="性別（任意）"
-    )
-    async def add_invite(
-        self,
-        interaction: discord.Interaction,
-        inviter_id: str,
-        invited_id: str,
-        method: str,
-        gender: str = None
-    ):
-        # Supabaseに保存
-        try:
-            data = {
-                "inviter_id": inviter_id,
-                "invited_id": invited_id,
-                "invite_method": method,
-                "gender": gender
-            }
-            response = supabase.table("invites").insert(data).execute()
-            await interaction.response.send_message(
-                f"✅ 招待情報を登録しました：\n"
-                f"- 招待者: <@{inviter_id}>\n"
-                f"- 対象: <@{invited_id}>\n"
-                f"- 方法: {method}\n"
-                f"- 性別: {gender or '未入力'}",
-                ephemeral=True
-            )
-        except Exception as e:
-            await interaction.response.send_message(f"❌ 登録失敗: {e}", ephemeral=True)
+        await ctx.send(
+            f"✅ 招待情報を登録しました：\n"
+            f"- 招待者: <@{inviter_id}>\n"
+            f"- 対象: <@{invited_id}>\n"
+            f"- 方法: {method}\n"
+            f"- 性別: {gender}"
+        )
+    except Exception as e:
+        await ctx.send(f"❌ 登録失敗: {e}")
 
 
-class ExportCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+# ✅ 通常コマンド：Googleスプレッドシートに集計出力
+@bot.command(name="export_invite_summary")
+@commands.has_permissions(manage_guild=True)
+async def export_invite_summary(ctx):
+    try:
+        await ctx.send("📊 集計を開始します。しばらくお待ちください...")
 
-    @app_commands.command(name="export_invite_summary", description="招待方法×性別でGoogleスプレッドシートに集計出力（管理者限定）")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def export_invite_summary(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)  # 少し時間がかかる処理
+        result = supabase.table("invites").select("invite_method", "gender").execute()
+        data = result.data
 
-        try:
-            # Supabaseからデータ取得
-            result = supabase.table("invites").select("invite_method", "gender").execute()
-            data = result.data
+        for row in data:
+            if not row.get("gender"):
+                row["gender"] = "未入力"
 
-            # genderが未入力の場合を補完
-            for row in data:
-                if not row.get("gender"):
-                    row["gender"] = "未入力"
+        summary = {}
+        for row in data:
+            method = row["invite_method"]
+            gender = row["gender"]
+            if method not in summary:
+                summary[method] = {"男性": 0, "女性": 0, "未入力": 0}
+            summary[method][gender] += 1
 
-            # 集計処理
-            summary = {}
-            for row in data:
-                method = row["invite_method"]
-                gender = row["gender"]
-                if method not in summary:
-                    summary[method] = {"男性": 0, "女性": 0, "未入力": 0}
-                summary[method][gender] = summary[method].get(gender, 0) + 1
+        # スプレッドシート出力
+        worksheet.clear()
+        worksheet.append_row(["招待方法", "男性", "女性", "未入力", "合計"])
+        for method, counts in summary.items():
+            male = counts["男性"]
+            female = counts["女性"]
+            unknown = counts["未入力"]
+            total = male + female + unknown
+            worksheet.append_row([method, male, female, unknown, total])
 
-            # スプレッドシート出力
-            worksheet.clear()
-            worksheet.append_row(["招待方法", "男性", "女性", "未入力", "合計"])
-
-            for method, counts in summary.items():
-                male = counts.get("男性", 0)
-                female = counts.get("女性", 0)
-                unknown = counts.get("未入力", 0)
-                total = male + female + unknown
-                worksheet.append_row([method, male, female, unknown, total])
-
-            await interaction.followup.send("✅ Googleスプレッドシートに集計結果を出力しました。", ephemeral=True)
-
-        except Exception as e:
-            await interaction.followup.send(f"❌ 出力に失敗しました: {e}", ephemeral=True)
-
+        await ctx.send("✅ 集計結果をGoogleスプレッドシートに出力しました。")
+    except Exception as e:
+        await ctx.send(f"❌ 出力に失敗しました: {e}")
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
