@@ -72,8 +72,6 @@ load_data()
 class MyBot(commands.Bot):
     async def setup_hook(self):
         print("setup_hook called")
-        await self.add_cog(InviteCommands(self))
-        await self.add_cog(ExportCog(self))
         guild_id = discord.Object(id=1361763625953398945)
         await self.tree.sync(guild=guild_id)
         print("Commands synced.")
