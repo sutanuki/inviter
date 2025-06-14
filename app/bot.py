@@ -447,23 +447,33 @@ async def export_invite_summary(ctx):
     try:
         await ctx.send("📊 集計を開始します。しばらくお待ちください...")
 
-        result = supabase.table("invites").select("invite_method", "gender").execute()
+        result = supabase.table("invites").select("invite_method", "gender", "settled").execute()
         data = result.data
 
         for row in data:
             if not row.get("gender"):
                 row["gender"] = "未入力"
 
+        # 通常集計と定着数集計を分ける
         summary = {}
+        settled_summary = {}
         for row in data:
             method = row["invite_method"]
             gender = row["gender"]
+            settled = row.get("settled", False)
+
             if method not in summary:
                 summary[method] = {"男性": 0, "女性": 0, "未入力": 0}
+                settled_summary[method] = {"男性": 0, "女性": 0, "未入力": 0}
+
             summary[method][gender] += 1
+            if settled:
+                settled_summary[method][gender] += 1
 
         # スプレッドシート出力
         worksheet.clear()
+
+        # 1段目: 全体の集計
         worksheet.append_row(["招待方法", "男性", "女性", "未入力", "合計"])
         for method, counts in summary.items():
             male = counts["男性"]
@@ -472,9 +482,30 @@ async def export_invite_summary(ctx):
             total = male + female + unknown
             worksheet.append_row([method, male, female, unknown, total])
 
+        # 空行
+        worksheet.append_row([])
+
+        # 2段目: 定着数と割合
+        worksheet.append_row(["定着数", "男性", "女性", "未入力", "男性割合", "女性割合"])
+        for method in summary:
+            settled = settled_summary.get(method, {"男性": 0, "女性": 0, "未入力": 0})
+            total = sum(summary[method].values())
+            male_rate = f"{round(settled['男性'] / summary[method]['男性'] * 100)}％" if summary[method]['男性'] > 0 else "0％"
+            female_rate = f"{round(settled['女性'] / summary[method]['女性'] * 100)}％" if summary[method]['女性'] > 0 else "0％"
+
+            worksheet.append_row([
+                method,
+                settled["男性"],
+                settled["女性"],
+                settled["未入力"],
+                male_rate,
+                female_rate
+            ])
+
         await ctx.send("✅ 集計結果をGoogleスプレッドシートに出力しました。")
     except Exception as e:
         await ctx.send(f"❌ 出力に失敗しました: {e}")
-        
+
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
