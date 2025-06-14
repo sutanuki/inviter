@@ -427,6 +427,18 @@ async def add_invite(ctx, inviter_id: str, invited_id: str, method: str, gender:
     except Exception as e:
         await ctx.send(f"❌ 登録失敗: {e}")
 
+@bot.command(name="mark_settled")
+@commands.has_permissions(manage_guild=True)
+async def mark_settled(ctx, *invited_ids: str):
+    try:
+        updated = 0
+        for invited_id in invited_ids:
+            response = supabase.table("invites").update({"settled": True}).eq("invited_id", invited_id).execute()
+            if response.data:
+                updated += 1
+        await ctx.send(f"✅ {updated} 件のユーザーを定着済みに更新しました。")
+    except Exception as e:
+        await ctx.send(f"❌ 更新に失敗しました: {e}")
 
 # ✅ 通常コマンド：Googleスプレッドシートに集計出力
 @bot.command(name="export_invite_summary")
@@ -463,5 +475,6 @@ async def export_invite_summary(ctx):
         await ctx.send("✅ 集計結果をGoogleスプレッドシートに出力しました。")
     except Exception as e:
         await ctx.send(f"❌ 出力に失敗しました: {e}")
+        
 TOKEN = os.getenv("DISCORD_TOKEN")
 bot.run(TOKEN)
