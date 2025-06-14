@@ -265,11 +265,12 @@ class FormModal(discord.ui.Modal):
 
         await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
 
-        await interaction.response.send_message(
+        await interaction.followup.send(  # ← ✅ followup.send に修正
             f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
             f"<#{self.next_channel}>へ進んでください。",
             ephemeral=True
         )
+
 
 class FormView(discord.ui.View):
     def __init__(self, question: str, example: str, check_func, next_channel: str, remove_role: str = None, add_role: str = None):
