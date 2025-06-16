@@ -203,52 +203,52 @@ class YesNoView(View):
         self.add_item(yes_button)
         self.add_item(no_button)
 
-def make_callback(self, answer: str):
-    async def callback(interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+    def make_callback(self, answer: str):
+        async def callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral=True)
 
-        uid = str(interaction.user.id)
-        user_data.setdefault(uid, {})
-        user_data[uid]["answers"] = user_data[uid].get("answers", {})
-        user_data[uid]["answers"][self.question_name] = answer
+            uid = str(interaction.user.id)
+            user_data.setdefault(uid, {})
+            user_data[uid]["answers"] = user_data[uid].get("answers", {})
+            user_data[uid]["answers"][self.question_name] = answer
 
-        try:
-            save_data()
-        except Exception as e:
-            print(f"データ保存に失敗しました: {e}")
-            await interaction.followup.send("内部エラーが発生しました。", ephemeral=True)
-            return
-
-        if answer != self.correct_answer:
             try:
-                await interaction.guild.ban(interaction.user, reason="不正解によるBAN", delete_message_days=0)
-                await interaction.followup.send(
-                    "あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。",
-                    ephemeral=True
-                )
-            except discord.Forbidden:
-                await interaction.followup.send(
-                    "あなたのBANに失敗しました（Botに権限がない可能性があります）。",
-                    ephemeral=True
-                )
+                save_data()
             except Exception as e:
-                print(f"BAN処理でエラー: {e}")
-            return
+                print(f"データ保存に失敗しました: {e}")
+                await interaction.followup.send("内部エラーが発生しました。", ephemeral=True)
+                return
 
-        try:
-            await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
-        except Exception as e:
-            print(f"ロール変更中にエラー: {e}")
-            await interaction.followup.send("ロールの更新中にエラーが発生しました。", ephemeral=True)
-            return
+            if answer != self.correct_answer:
+                try:
+                    await interaction.guild.ban(interaction.user, reason="不正解によるBAN", delete_message_days=0)
+                    await interaction.followup.send(
+                        "あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。",
+                        ephemeral=True
+                    )
+                except discord.Forbidden:
+                    await interaction.followup.send(
+                        "あなたのBANに失敗しました（Botに権限がない可能性があります）。",
+                        ephemeral=True
+                    )
+                except Exception as e:
+                    print(f"BAN処理でエラー: {e}")
+                return
 
-        await interaction.followup.send(
-            f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
-            f"<#{self.next_channel}>へ進んでください。",
-            ephemeral=True
-        )
+            try:
+                await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
+            except Exception as e:
+                print(f"ロール変更中にエラー: {e}")
+                await interaction.followup.send("ロールの更新中にエラーが発生しました。", ephemeral=True)
+                return
 
-    return callback
+            await interaction.followup.send(
+                f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
+                f"<#{self.next_channel}>へ進んでください。",
+                ephemeral=True
+            )
+
+        return callback
 
 
 
