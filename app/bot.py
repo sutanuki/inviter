@@ -204,30 +204,23 @@ class YesNoView(View):
         self.add_item(no_button)
 
     def make_callback(self, answer: str):
-        async def callback(interaction: discord.Interaction):
-            await interaction.response.defer(ephemeral=True)  # 3秒以内に応答（仮）
-
-            uid = str(interaction.user.id)
-            user_data.setdefault(uid, {})
-            user_data[uid]["answers"] = user_data[uid].get("answers", {})
-            user_data[uid]["answers"][self.question_name] = answer
-            save_data()
-
-            if answer != self.correct_answer:
-                await interaction.guild.ban(interaction.user, reason="不正解によるBAN")
-                await interaction.followup.send(
-                    "あなたには参加権がないようです。誤答の場合は招待者にDMを送ってください。",
-                    ephemeral=True
-                )
+        async def callback(self, interaction: discord.Interaction):
+            try:
+                await interaction.response.defer(ephemeral=True)
+            except discord.NotFound:
+                # 期限切れのインタラクション
                 return
 
-            await change_role(interaction.user, interaction.guild, self.remove_role, self.add_role)
-            await interaction.followup.send(
-                f"{interaction.user.mention} 回答を「{answer}」として記録しました。\n"
-                f"<#{self.next_channel}>へ進んでください。",
-                ephemeral=True
-            )
-        return callback
+            # 処理を進める前にrate limitを回避するdelay（必要に応じて）
+            await asyncio.sleep(1)
+
+            try:
+                await interaction.followup.send("何らかの応答です", ephemeral=True)
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    # ログだけ残すか、再試行処理を設ける
+                    print("Rate limit hit. Retrying later.")
+
 
 
     
