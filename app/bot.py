@@ -428,27 +428,50 @@ async def threw(ctx, member: discord.Member):
 
 
 # ✅ 通常コマンド：招待情報を手動で登録
-@bot.command(name="add_invite")
+@bot.command(name="add_invite_bulk")
 @commands.has_permissions(manage_guild=True)
-async def add_invite(ctx, inviter_id: str, invited_id: str, method: str, gender: str = "未入力"):
+async def add_invite_bulk(ctx):
     try:
-        data = {
-            "inviter_id": inviter_id,
-            "invited_id": invited_id,
-            "invite_method": method,
-            "gender": gender
-        }
-        supabase.table("invites").insert(data).execute()
+        content = ctx.message.content
+        lines = content.splitlines()[1:]  # 1行目はコマンド名なのでスキップ
+        success_count = 0
+        fail_count = 0
+        failed_lines = []
 
-        await ctx.send(
-            f"✅ 招待情報を登録しました：\n"
-            f"- 招待者: <@{inviter_id}>\n"
-            f"- 対象: <@{invited_id}>\n"
-            f"- 方法: {method}\n"
-            f"- 性別: {gender}"
+        for line in lines:
+            parts = line.strip().split()
+            if len(parts) != 4:
+                fail_count += 1
+                failed_lines.append(f"❌ フォーマットエラー: `{line}`")
+                continue
+
+            inviter_id, invited_id, gender, method = parts
+            data = {
+                "inviter_id": inviter_id,
+                "invited_id": invited_id,
+                "invite_method": method,
+                "gender": gender
+            }
+
+            try:
+                supabase.table("invites").insert(data).execute()
+                success_count += 1
+            except Exception as e:
+                fail_count += 1
+                failed_lines.append(f"❌ エラー（{invited_id}）: {str(e)}")
+
+        result_message = (
+            f"✅ 登録完了\n"
+            f"- 成功: {success_count} 件\n"
+            f"- 失敗: {fail_count} 件"
         )
+        if failed_lines:
+            result_message += "\n" + "\n".join(failed_lines[:10])  # エラーは最大10件表示
+
+        await ctx.send(result_message)
+
     except Exception as e:
-        await ctx.send(f"❌ 登録失敗: {e}")
+        await ctx.send(f"❌ コマンドエラー: {str(e)}")
 
 @bot.command(name="mark_settled")
 @commands.has_permissions(manage_guild=True)
