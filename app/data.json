@@ -1,0 +1,42 @@
+{
+  "1353745472153583616": {
+    "answers": {
+      "Q1": "2006-01-06",
+      "Q2": "Yes",
+      "Q3": "No",
+      "about": "Yes",
+      "rule": "Yes",
+      "request": "Yes"
+    }
+  },
+  "609291557522243593": {
+    "answers": {
+      "Q1": "2006-01-06",
+      "Q2": "No",
+      "Q3": "No",
+      "about": "Yes",
+      "rule": "Yes",
+      "request": "Yes"
+    }
+  },
+  "706027570260607026": {
+    "answers": {
+      "Q1": "2003-04-19",
+      "Q2": "Yes",
+      "Q3": "No",
+      "about": "Yes",
+      "rule": "Yes",
+      "request": "Yes"
+    }
+  },
+  "1291676115542212715": {
+    "answers": {
+      "Q1": "2005-05-09",
+      "Q2": "Yes",
+      "Q3": "No",
+      "about": "Yes",
+      "rule": "Yes",
+      "request": "Yes"
+    }
+  }
+}
