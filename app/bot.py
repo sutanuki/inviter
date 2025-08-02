@@ -476,12 +476,15 @@ class ParticipateView(ui.View):
         super().__init__(timeout=None)
         self.add_item(ParticipateButton())
 
-async def send_participate_message(channel_id: int, text: str):
+@bot.command(name="send_participate_message")
+@commands.has_permissions(administrator=True)
+async def send_participate_message(ctx,channel_id: int, text: str):
     channel = bot.get_channel(channel_id)
     if channel is None:
         print(f"チャンネルID {channel_id} が見つかりません。")
         return
     await channel.send(text, view=ParticipateView())
+    await ctx.send("参加ボタン付きメッセージを送信しました。")
 
 @bot.command(name="start_questionnaire_manual")
 @commands.has_permissions(administrator=True)  # 管理者のみ実行可
