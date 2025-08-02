@@ -213,32 +213,6 @@ class YesNoView(ui.View):
         await interaction.response.send_message("いいえ を選択しました。", ephemeral=True)
         self.stop()
 
-# --- 生年月日入力用Modal ---
-class BirthdayModal(ui.Modal, title="生年月日入力フォーム"):
-    def __init__(self, member: discord.Member):
-        super().__init__()
-        self.member = member
-        self.birthday = ui.TextInput(label="生年月日を入力してください (yyyy年mm月dd日)", placeholder="例: 2000年1月1日", required=True, max_length=20)
-        self.add_item(self.birthday)
-        self.value = None
-
-    async def on_submit(self, interaction: discord.Interaction):
-        m = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日", self.birthday.value)
-        if not m:
-            await interaction.response.send_message("形式が不正です。yyyy年mm月dd日の形式で入力してください。", ephemeral=True)
-            self.value = None
-            return
-        y, mo, d = map(int, m.groups())
-        try:
-            dob = datetime(y, mo, d)
-        except ValueError:
-            await interaction.response.send_message("日付の形式が正しくありません。", ephemeral=True)
-            self.value = None
-            return
-        self.value = dob.strftime("%Y-%m-%d")
-        await interaction.response.send_message("生年月日を受け付けました。", ephemeral=True)
-        self.stop()
-
 async def start_questionnaire(member: discord.Member):
     dm = await member.create_dm()
     answers = {}
@@ -260,17 +234,24 @@ async def start_questionnaire(member: discord.Member):
         return
     answers["招待者"] = view.selected_id
 
-    # 生年月日質問（フォームに変更）
-    birthday_modal = BirthdayModal(member)
-    await dm.send("生年月日を以下のフォームに入力してください。")
-    await dm.send_modal(birthday_modal)
-    await birthday_modal.wait()
-    if birthday_modal.value is None:
-        await dm.send("生年月日の入力が正しくありません。中断します。")
+    # 生年月日質問（テキスト入力方式に変更）
+    await dm.send("生年月日を「YYYY-MM-DD」の形式で入力してください。")
+
+    def check(m):
+        return m.author == member and isinstance(m.channel, discord.DMChannel)
+
+    try:
+        msg = await bot.wait_for("message", timeout=120, check=check)
+        dob_str = msg.content.strip()
+        dob = datetime.strptime(dob_str, "%Y-%m-%d")
+    except asyncio.TimeoutError:
+        await dm.send("時間切れです。生年月日が入力されませんでした。中断します。")
         return
-    dob_str = birthday_modal.value
+    except ValueError:
+        await dm.send("入力形式が正しくありません。`YYYY-MM-DD` の形式で入力してください。中断します。")
+        return
+
     answers["生年月日"] = dob_str
-    dob = datetime.strptime(dob_str, "%Y-%m-%d")
 
     # 学年判定
     def is_high_school_student(dob: datetime) -> bool:
@@ -285,9 +266,10 @@ async def start_questionnaire(member: discord.Member):
         if role:
             await member.add_roles(role)
         await dm.send("""現在高校生相当のため、参加資格がありません。
-誤答の場合はあるかなまでご連絡ください。""")
+    誤答の場合はあるかなまでご連絡ください。""")
         await store_answers(member.id, answers)
         return
+
 
     # 「現在高校生ですか？」質問
     view = YesNoView(member, "高校卒業確認")
