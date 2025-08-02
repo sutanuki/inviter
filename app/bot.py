@@ -77,6 +77,13 @@ async def on_member_join(member: discord.Member):
         role = discord.utils.get(member.guild.roles, name="説明中")
     if role:
         await member.add_roles(role)
+    if role and role.name == "初期アイコン":
+        # 初期アイコンロール付与時にアイコン変更を促すDMを送信
+        try:
+            dm = await member.create_dm()
+            await dm.send("初期アイコンの状態です。プロフィール画像を変更してください。変更後、再度参加手続きを進められます。")
+        except Exception as e:
+            print(f"DM送信失敗: {e}")
     if role and role.name == "説明中":
         await start_questionnaire(member)
 
@@ -229,6 +236,32 @@ class YesNoView(ui.View):
         await interaction.response.send_message("いいえ を選択しました。", ephemeral=True)
         self.stop()
 
+# --- 生年月日入力用Modal ---
+class BirthdayModal(ui.Modal, title="生年月日入力フォーム"):
+    def __init__(self, member: discord.Member):
+        super().__init__()
+        self.member = member
+        self.birthday = ui.TextInput(label="生年月日を入力してください (yyyy年mm月dd日)", placeholder="例: 2000年1月1日", required=True, max_length=20)
+        self.add_item(self.birthday)
+        self.value = None
+
+    async def on_submit(self, interaction: discord.Interaction):
+        m = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日", self.birthday.value)
+        if not m:
+            await interaction.response.send_message("形式が不正です。yyyy年mm月dd日の形式で入力してください。", ephemeral=True)
+            self.value = None
+            return
+        y, mo, d = map(int, m.groups())
+        try:
+            dob = datetime(y, mo, d)
+        except ValueError:
+            await interaction.response.send_message("日付の形式が正しくありません。", ephemeral=True)
+            self.value = None
+            return
+        self.value = dob.strftime("%Y-%m-%d")
+        await interaction.response.send_message("生年月日を受け付けました。", ephemeral=True)
+        self.stop()
+
 async def start_questionnaire(member: discord.Member):
     dm = await member.create_dm()
     answers = {}
@@ -250,46 +283,33 @@ async def start_questionnaire(member: discord.Member):
         return
     answers["招待者"] = view.selected_id
 
-    # 生年月日質問
-    await dm.send("あなたの生年月日を教えてください。 (yyyy年mm月dd日)")
-
-    def check_msg(m: discord.Message):
-        return m.author.id == member.id and m.channel.type == discord.ChannelType.private
-
-    try:
-        msg_bd = await bot.wait_for("message", check=check_msg,timeout=DEFAULT_TIMEOUT)
-    except asyncio.TimeoutError:
-        await dm.send("時間切れです。")
+    # 生年月日質問（フォームに変更）
+    birthday_modal = BirthdayModal(member)
+    await dm.send("生年月日を以下のフォームに入力してください。")
+    await dm.send_modal(birthday_modal)
+    await birthday_modal.wait()
+    if birthday_modal.value is None:
+        await dm.send("生年月日の入力が正しくありません。中断します。")
         return
+    dob_str = birthday_modal.value
+    answers["生年月日"] = dob_str
+    dob = datetime.strptime(dob_str, "%Y-%m-%d")
 
-    m = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日", msg_bd.content)
-    if m:
-        y, mo, d = map(int, m.groups())
-        try:
-            dob = datetime(y, mo, d)
-        except ValueError:
-            await dm.send("日付の形式が正しくありません。中断します。")
-            return
-        answers["生年月日"] = dob.strftime("%Y-%m-%d")
+    # 学年判定
+    def is_high_school_student(dob: datetime) -> bool:
+        today = datetime.today()
+        school_year_start = datetime(today.year, 4, 1)
+        base_year = today.year if today >= school_year_start else today.year - 1
+        age_on_april_1 = base_year - dob.year - ((dob.month, dob.day) > (4, 1))
+        return age_on_april_1 <= 17
 
-        # 学年判定
-        def is_high_school_student(dob: datetime) -> bool:
-            today = datetime.today()
-            school_year_start = datetime(today.year, 4, 1)
-            base_year = today.year if today >= school_year_start else today.year - 1
-            age_on_april_1 = base_year - dob.year - ((dob.month, dob.day) > (4, 1))
-            return 15 <= age_on_april_1 <= 17
-
-        if is_high_school_student(dob):
-            role = discord.utils.get(member.guild.roles, name="資格無し")
-            if role:
-                await member.add_roles(role)
-            await dm.send("""現在高校生相当のため、参加資格がありません。
+    if is_high_school_student(dob):
+        role = discord.utils.get(member.guild.roles, name="資格無し")
+        if role:
+            await member.add_roles(role)
+        await dm.send("""現在高校生相当のため、参加資格がありません。
 誤答の場合はあるかなまでご連絡ください。""")
-            await store_answers(member.id, answers)
-            return
-    else:
-        await dm.send("形式が不正です。中断します。")
+        await store_answers(member.id, answers)
         return
 
     # 「現在高校生ですか？」質問
@@ -418,6 +438,50 @@ async def store_answers(user_id: int, answers: dict):
         print("✅ 回答をSupabaseに保存しました:", resp.data)
     except Exception as e:
         print(f"❌ Supabase保存エラー: {e}")
+
+# 参加ボタン付きメッセージを指定チャンネルに送信する関数
+class ParticipateButton(ui.Button):
+    def __init__(self):
+        super().__init__(label="参加する", style=discord.ButtonStyle.primary)
+
+    async def callback(self, interaction: discord.Interaction):
+        member = interaction.user
+        guild = interaction.guild
+        if guild is None:
+            await interaction.response.send_message("このコマンドはサーバー内で実行してください。", ephemeral=True)
+            return
+
+        role_initial = get(guild.roles, name="初期アイコン")
+        role_explaining = get(guild.roles, name="説明中")
+        role_returnee = get(guild.roles, name="出戻り")
+        role_invited = get(guild.roles, name="招待済み")
+
+        user_roles = member.roles
+
+        if role_explaining and role_explaining in user_roles:
+            await interaction.response.defer(ephemeral=True)
+            await start_questionnaire(member)
+            await interaction.followup.send("質問を開始しました。DMを確認してください。", ephemeral=True)
+        elif role_initial and role_initial in user_roles:
+            await interaction.response.send_message("初期アイコンロールの状態です。プロフィール画像を変更してください。変更後、再度お試しください。", ephemeral=True)
+        elif role_returnee and role_returnee in user_roles:
+            await interaction.response.send_message("あなたは出戻りロールを持っています。参加資格が制限されています。詳細は管理者にお問い合わせください。", ephemeral=True)
+        elif role_invited and role_invited in user_roles:
+            await interaction.response.send_message("すでに招待済みロールを持っています。特に追加の手続きは不要です。", ephemeral=True)
+        else:
+            await interaction.response.send_message("説明中ロールを持っていません。参加手続きを開始できません。", ephemeral=True)
+
+class ParticipateView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(ParticipateButton())
+
+async def send_participate_message(channel_id: int, text: str):
+    channel = bot.get_channel(channel_id)
+    if channel is None:
+        print(f"チャンネルID {channel_id} が見つかりません。")
+        return
+    await channel.send(text, view=ParticipateView())
 
 @bot.command(name="start_questionnaire_manual")
 @commands.has_permissions(administrator=True)  # 管理者のみ実行可
