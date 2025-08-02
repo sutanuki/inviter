@@ -38,29 +38,6 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-def load_data():
-    global user_data
-    data = supabase.table("user_data_copy").select("*").execute().data
-    user_data = {item["id"]: {"answers": item["answers"]} for item in data}
-
-def save_data():
-    data_list = []
-    for uid, entry in user_data.items():
-        data_list.append({
-            "id": uid,
-            "answers": entry.get("answers", {})
-        })
-    for data in data_list:
-        response = requests.post(
-            f"{SUPABASE_URL}/rest/v1/user_data_copy",
-            headers={**HEADERS, "Prefer": "resolution=merge-duplicates"},
-            json=[data]
-        )
-        if response.status_code not in [200, 201]:
-            print("保存失敗:", response.text)
-
-load_data()
-
 
 def is_initial_avatar(member: discord.Member) -> bool:
     return member.avatar is None
@@ -351,9 +328,13 @@ async def start_questionnaire(member: discord.Member):
 
     # 「以上、確認できましたか？（サーバー説明）」質問
     view = YesNoView(member, "サーバー説明")
-    await dm.send("""これから招待させていただくLawlessというサーバーはエロイプを中心としたサーバーです。
-サーバーの方針として声の善し悪しが重視される傾向にあり、声が良ければそれだけ優遇されます。
-もちろん声に自信がなくても蹴られる！ということはなく、トーク力や浮上率などその他の要素も考慮されますが、声が第1の評価基準になります。
+    await dm.send("""これから招待させていただく**__Lawless__**というサーバーはエロイプを中心としたサーバーです。
+                  
+サーバーの方針として**__声の善し悪し__**が重視される傾向にあり、
+声が良ければそれだけ優遇されます。
+                  
+もちろん声に自信がなくても蹴られる！ということはなく、
+トーク力や浮上率などその他の要素も考慮されますが、声が第1の評価基準になります。
 確認できましたか？""", view=view)
     await view.wait()
     if view.answer is None:
@@ -372,10 +353,15 @@ async def start_questionnaire(member: discord.Member):
 
     # 「以上、確認できましたか？（ルール確認）」質問
     view = YesNoView(member, "ルール確認")
-    await dm.send("""Lawlessでは鯖主であるやまげさんが絶対のルールです。
-一つ一つ細かくルールを記載すると、とても長くなり穴も生まれるため、鯖主を絶対のルールとしています。
+    await dm.send("""Lawlessでは鯖主である**__やまげさんが絶対のルール__**です。
+                  
+一つ一つ細かくルールを記載するととても長くなり穴も生まれるため
+運営上効率がいい鯖主を絶対のルールとする形をとっています。
+                  
 もちろん理不尽に怒られる・蹴られるなどは無いため、そこは心配しなくても大丈夫です。
-とはいえ、全くルールがない状態だと基準が分からず困るため、大まかなルールについてはサーバーに記載があります。
+                  
+とはいえ、全くルールがない状態だと基準が分からず困るため
+大まかなルールについてはサーバーに記載があります。
 しっかりと読み込んでください。
 以上、確認できましたか？""", view=view)
     await view.wait()
@@ -395,21 +381,25 @@ async def start_questionnaire(member: discord.Member):
 
     # 「以上を実行していただけますか？」質問
     view = YesNoView(member, "面接の予約")
-    await dm.send("""サーバーに参加した際にして欲しいこと
+    await dm.send("""## サーバーに参加した際にして欲しいこと
 最後に、入ってからしてもらいたいことがいくつかあります。
-1つ目が最初の案内を読み飛ばさず、該当の項目にチェックを入れることです。
+                  
+1つ目が最初の**__案内を読み飛ばさず、該当の項目にチェックを入れること__**です。
 性別などのチェック欄が出てくるので、一つ一つしっかりとチェックしてください。
-2つ目がルールの確認です。
+                  
+2つ目が**__ルールの確認__**です。
 サーバーに参加するとルール確認というチャンネルが見えるかと思います。
 中身を確認・理解し、遵守してください。
-3つ目が面接の予約です。
+                  
+3つ目が**__面接の予約__**です。
 当サーバーでは日本語が話せるかの確認程度の簡単な面接を行っています。
-面接は水曜日を除いた22時、その他不定期で13,25時に行っています。
+面接は水曜日を除いた22時、その他土日、水曜日を除き不定期で13,25時に行っています。
 この中で都合のいい時間帯を選び、22時の場合は面接日程に、13,25時の場合はサブ面接日程に
-『○○からの招待で来ました。️
+『"""+str(inviter_mapping[answers["招待者"]])+"""からの招待で来ました。️
 〇月️〇日の〇時から面接をお願いします』
 と書き込みをお願いします。 また、日程は面接官の都合により変更される可能性があります。
 面接日程チャンネルで面接前にお知らせが入るのでそこを参照して予約をお願いします。
+
 以上を実行していただけますか？""", view=view)
     await view.wait()
     if view.answer is None:
@@ -463,13 +453,13 @@ class ParticipateButton(ui.Button):
             await start_questionnaire(member)
             await interaction.followup.send("質問を開始しました。DMを確認してください。", ephemeral=True)
         elif role_initial and role_initial in user_roles:
-            await interaction.response.send_message("初期アイコンロールの状態です。プロフィール画像を変更してください。変更後、再度お試しください。", ephemeral=True)
+            await interaction.response.send_message("プロフィール画像を変更してください。", ephemeral=True)
         elif role_returnee and role_returnee in user_roles:
-            await interaction.response.send_message("あなたは出戻りロールを持っています。参加資格が制限されています。詳細は管理者にお問い合わせください。", ephemeral=True)
+            await interaction.response.send_message("参加資格が制限されています。詳細は管理者にお問い合わせください。", ephemeral=True)
         elif role_invited and role_invited in user_roles:
-            await interaction.response.send_message("すでに招待済みロールを持っています。特に追加の手続きは不要です。", ephemeral=True)
+            await interaction.response.send_message("すでに招待済みです。新しくリンクが必要な場合はあるかなにお問い合わせください。", ephemeral=True)
         else:
-            await interaction.response.send_message("説明中ロールを持っていません。参加手続きを開始できません。", ephemeral=True)
+            await interaction.response.send_message("エラーが発生しました。詳細は管理者にお問い合わせください。", ephemeral=True)
 
 class ParticipateView(ui.View):
     def __init__(self):
