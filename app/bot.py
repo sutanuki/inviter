@@ -32,22 +32,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 DEFAULT_TIMEOUT = 3600
 
-json_string = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-if not json_string:
-    raise RuntimeError("環境変数 GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません")
-
-# 一時ファイルに保存して認証
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as tmp_file:
-    tmp_file.write(json_string)
-    tmp_file.flush()
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(tmp_file.name, scope)
-    gc = gspread.authorize(credentials)
-
-# スプレッドシートに接続
-spreadsheet = gc.open("invites")
-worksheet = spreadsheet.sheet1
-
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -443,6 +427,23 @@ async def start_questionnaire_manual(ctx, member: discord.Member):
         await start_questionnaire(member)
     except Exception as e:
         await ctx.send(f"❌ エラー: {e}")
+
+
+json_string = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+if not json_string:
+    raise RuntimeError("環境変数 GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません")
+
+# 一時ファイルに保存して認証
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as tmp_file:
+    tmp_file.write(json_string)
+    tmp_file.flush()
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(tmp_file.name, scope)
+    gc = gspread.authorize(credentials)
+
+# スプレッドシートに接続
+spreadsheet = gc.open("invites")
+worksheet = spreadsheet.sheet1
 
 # ✅ 通常コマンド：招待情報を手動で登録
 @bot.command(name="add_invite_bulk")
